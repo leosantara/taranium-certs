@@ -1,19 +1,21 @@
+<!-- src/components/UploadCertificate.vue -->
 <template>
   <div class="upload-container">
     <h2>Upload Sertifikat Baru</h2>
-    <p>Unggah sertifikat digital Anda di sini. File akan di-hash dan disimpan secara lokal di backend, kemudian Anda dapat mendaftarkan hash ini di Taranium Smartchain.</p>
+    <p v-if="!userAddress" class="warning-message">Harap hubungkan MetaMask Anda untuk mengunggah sertifikat.</p>
+    <p v-else>Unggah sertifikat digital Anda di sini. File akan di-hash dan disimpan secara lokal di backend, kemudian Anda dapat mendaftarkan hash ini di Taranium Smartchain.</p>
 
     <div class="form-group">
       <label for="file">Pilih File Sertifikat:</label>
-      <input type="file" id="file" @change="handleFileUpload" ref="fileInput" accept=".pdf,.jpg,.png" />
+      <input type="file" id="file" @change="handleFileUpload" ref="fileInput" accept=".pdf,.jpg,.png" :disabled="!userAddress" />
     </div>
 
     <div class="form-group">
       <label for="folderName">Nama Folder (misal: "Ijazah-2023", "SertifikatPelatihan"):</label>
-      <input type="text" id="folderName" v-model="folderName" placeholder="Masukkan nama folder" />
+      <input type="text" id="folderName" v-model="folderName" placeholder="Masukkan nama folder" :disabled="!userAddress" />
     </div>
 
-    <button @click="uploadAndHash" :disabled="!selectedFile || !folderName || isUploading">
+    <button @click="uploadAndHash" :disabled="!selectedFile || !folderName || isUploading || !userAddress">
       {{ isUploading ? 'Mengunggah & Menghitung Hash...' : 'Unggah & Hitung Hash' }}
     </button>
 
@@ -21,10 +23,10 @@
       <h3>Hasil Upload & Hash:</h3>
       <p><strong>Status:</strong> {{ uploadResult.message }}</p>
       <p><strong>Hash Dokumen:</strong> {{ uploadResult.documentHash }}</p>
-      <p><strong>Path Lokal:</strong> {{ uploadResult.filePath }}</p>
+      <p><strong>Path Lokal:</strong> {{ uploadResult.localFilePath }}</p>
       <p v-if="error" class="error-message">{{ error }}</p>
 
-      <button @click="registerHash" :disabled="!uploadResult.documentHash || isRegistering" class="register-button">
+      <button @click="registerHash" :disabled="!uploadResult.documentHash || isRegistering || !userAddress" class="register-button">
         {{ isRegistering ? 'Mendaftarkan ke Blockchain...' : 'Daftarkan Hash ke Blockchain' }}
       </button>
       <p v-if="registrationTxHash" class="success-message">
@@ -35,9 +37,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import api from '../services/api';
-import { registerHashOnChain } from '../utils/web3';
+import { registerHashOnChain, connectWallet } from '../utils/web3';
+
+const props = defineProps({
+  userAddress: {
+    type: String,
+    default: null
+  }
+});
 
 const selectedFile = ref(null);
 const fileInput = ref(null);
@@ -64,6 +73,10 @@ const uploadAndHash = async () => {
     alert("Nama folder tidak boleh kosong.");
     return;
   }
+  if (!props.userAddress) {
+    alert("Harap hubungkan MetaMask Anda terlebih dahulu.");
+    return;
+  }
 
   isUploading.value = true;
   error.value = '';
@@ -72,6 +85,7 @@ const uploadAndHash = async () => {
     const formData = new FormData();
     formData.append('file', selectedFile.value);
     formData.append('folderName', folderName.value);
+    formData.append('issuerAddress', props.userAddress); // Kirim alamat MetaMask ke backend
 
     const response = await api.post('/api/register', formData, {
       headers: {
@@ -94,26 +108,28 @@ const registerHash = async () => {
     alert("Harap unggah dan hitung hash terlebih dahulu.");
     return;
   }
+  if (!props.userAddress) {
+    alert("Harap hubungkan MetaMask Anda terlebih dahulu.");
+    return;
+  }
 
   isRegistering.value = true;
   error.value = '';
 
   try {
-    // Untuk tujuan demo, kita akan gunakan alamat dompet user yang terhubung sebagai ownerAddress.
-    // Dalam aplikasi nyata, Anda mungkin perlu input manual atau logika untuk menentukan pemilik sertifikat sebenarnya (misal: mahasiswa).
-    // Atau smart contract Anda tidak perlu ownerAddress dan hanya mencatat hash dan issuer.
-    // Untuk POC, kita akan asumsikan ownerAddress adalah alamat signer (institusi).
-    const signer = await connectWallet(); // Meminta koneksi ke dompet (misal MetaMask)
-    if (!signer) {
-        throw new Error("Gagal terhubung ke dompet. Pastikan MetaMask terinstal dan terhubung.");
-    }
-    const ownerAddress = await signer.getAddress(); // Alamat dompet institusi yang menandatangani transaksi
-
-    const txHash = await registerHashOnChain(uploadResult.value.documentHash, ownerAddress, ""); // metadataURI dikosongkan dulu
+    // registerHashOnChain sudah mengambil signer address dari window.ethereum
+    const txHash = await registerHashOnChain(uploadResult.value.documentHash, ""); // metadataURI dikosongkan dulu
 
     if (txHash) {
       registrationTxHash.value = txHash;
       alert("Hash berhasil didaftarkan ke blockchain!");
+      // Reset form setelah berhasil daftar
+      if (fileInput.value) {
+        fileInput.value.value = '';
+      }
+      selectedFile.value = null;
+      folderName.value = '';
+      uploadResult.value = null;
     } else {
       alert("Pendaftaran hash ke blockchain gagal.");
     }
@@ -123,13 +139,28 @@ const registerHash = async () => {
     error.value = `Terjadi kesalahan saat mendaftar ke blockchain: ${err.message}`;
   } finally {
     isRegistering.value = false;
-    if (fileInput.value) {
-      fileInput.value.value = ''; // Reset input file
-    }
-    selectedFile.value = null;
-    folderName.value = ''; // Reset nama folder
   }
 };
+
+// Opsional: Cek jika userAddress berubah dari prop (misal, user disconnect/connect dari luar komponen)
+watch(() => props.userAddress, (newAddress) => {
+  if (newAddress) {
+    // Jika user connect, mungkin tidak perlu reset, tapi ini tergantung kebutuhan
+  } else {
+    // Jika user disconnect, reset form dan hasil
+    selectedFile.value = null;
+    folderName.value = '';
+    uploadResult.value = null;
+    isUploading.value = false;
+    isRegistering.value = false;
+    error.value = '';
+    registrationTxHash.value = null;
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }
+});
+
 </script>
 
 <style scoped>
@@ -152,6 +183,11 @@ p {
   text-align: center;
   color: #555;
   margin-bottom: 2rem;
+}
+
+.warning-message {
+  color: #d9534f;
+  font-weight: bold;
 }
 
 .form-group {

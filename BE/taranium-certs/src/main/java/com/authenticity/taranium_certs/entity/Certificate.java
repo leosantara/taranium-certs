@@ -1,63 +1,51 @@
 package com.authenticity.taranium_certs.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
  * Entitas Certificate yang merepresentasikan metadata dari sertifikat yang diupload.
- * Hash SHA-256 dokumen disimpan di sini, bersama dengan informasi pengunggah (institusi).
+ * Hash SHA-256 dokumen disimpan di sini, bersama dengan alamat blockchain pengunggah (institusi).
  */
 @Entity
-@Table(name = "certificates") // Nama tabel di database
-@NoArgsConstructor // Lombok: otomatis membuat konstruktor tanpa argumen
-@AllArgsConstructor // Lombok: otomatis membuat konstruktor dengan semua argumen
+@Table(name = "certificates")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Certificate {
 
-    @Getter
-    @Setter
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Strategi auto-increment ID
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Getter
-    @Setter
-    @Column(unique = true, nullable = false, length = 64) // Hash SHA-256, panjang 64 karakter heksadesimal
+    @Column(unique = true, nullable = false, length = 64)
     private String documentHash;
 
-    @Getter
-    @Setter
     @Column(nullable = false)
-    private String originalFileName; // Nama file asli saat diupload
+    private String originalFileName;
 
-    @Getter
-    @Setter
     @Column(nullable = false)
-    private String localFilePath; // Path relatif tempat file disimpan di server
+    private String localFilePath;
 
-    @Getter
-    @Setter
     @Column(nullable = false)
-    private String folderName; // Nama folder yang ditentukan institusi
+    private String folderName;
 
-    @Getter
-    @Setter
     @Column(nullable = false)
-    private String issuerEmail; // Email institusi yang mengupload sertifikat
+    private String issuerAddress; // Berubah: dari issuerEmail menjadi issuerAddress
 
-    @Getter
-    @Setter
     @Column(nullable = false)
-    private LocalDateTime uploadTimestamp; // Waktu upload
+    private LocalDateTime uploadTimestamp;
 
     // Konstruktor untuk membuat objek Certificate baru
-    public Certificate(String documentHash, String originalFileName, String localFilePath, String folderName, String issuerEmail) {
+    public Certificate(String documentHash, String originalFileName, String localFilePath, String folderName, String issuerAddress) {
         this.documentHash = documentHash;
         this.originalFileName = originalFileName;
         this.localFilePath = localFilePath;
         this.folderName = folderName;
-        this.issuerEmail = issuerEmail;
-        this.uploadTimestamp = LocalDateTime.now(); // Set waktu saat ini
+        this.issuerAddress = issuerAddress;
+        this.uploadTimestamp = LocalDateTime.now();
     }
 }

@@ -1,3 +1,4 @@
+<!-- src/views/HomeView.vue -->
 <template>
   <main class="home-view">
     <h1>Verifikasi Sertifikat Digital</h1>
@@ -15,7 +16,9 @@
       <p><strong>Hash Dokumen:</strong> {{ verificationResult.documentHash }}</p>
       <p><strong>Status Blockchain:</strong> {{ blockchainStatus }}</p>
       <p v-if="blockchainStatus === 'ASLI dan TERDAFTAR'">
-        Sertifikat Anda ditemukan dan terdaftar di Taranium Smartchain!
+        Sertifikat ini ditemukan dan terdaftar di Taranium Smartchain!
+        <span v-if="blockchainInfo.issuer"> Diterbitkan oleh: {{ blockchainInfo.issuer.substring(0, 8) }}...{{ blockchainInfo.issuer.substring(blockchainInfo.issuer.length - 6) }}</span>
+        <span v-if="blockchainInfo.timestamp"> pada: {{ blockchainInfo.timestamp }}</span>
       </p>
       <p v-else-if="blockchainStatus === 'TIDAK TERDAFTAR'">
         Sertifikat ini belum terdaftar di Taranium Smartchain.
@@ -27,13 +30,14 @@
 
 <script setup>
 import { ref } from 'vue';
-import api from '../services/api.js';
-import { checkHashOnChain } from '../utils/web3.js'; // Pastikan ini mengimpor fungsi yang benar
+import api from '../services/api';
+import { checkHashOnChain } from '../utils/web3';
 
 const selectedFile = ref(null);
 const fileInput = ref(null);
 const verificationResult = ref(null);
 const blockchainStatus = ref('');
+const blockchainInfo = ref({}); // Untuk menyimpan info dari blockchain (issuer, timestamp)
 const isVerifying = ref(false);
 const error = ref('');
 
@@ -41,6 +45,7 @@ const handleFileUpload = (event) => {
   selectedFile.value = event.target.files[0];
   verificationResult.value = null; // Reset hasil sebelumnya
   blockchainStatus.value = '';
+  blockchainInfo.value = {};
   error.value = '';
 };
 
@@ -68,11 +73,13 @@ const verifyCertificate = async () => {
     verificationResult.value = { documentHash };
 
     // Langkah 2: Cek hash ini di blockchain Taranium
-    const isRegistered = await checkHashOnChain(documentHash); // Panggil fungsi Web3.js
+    const { isRegistered, info } = await checkHashOnChain(documentHash); // Panggil fungsi Web3.js
     if (isRegistered) {
       blockchainStatus.value = 'ASLI dan TERDAFTAR';
+      blockchainInfo.value = info;
     } else {
       blockchainStatus.value = 'TIDAK TERDAFTAR';
+      blockchainInfo.value = {};
     }
 
   } catch (err) {

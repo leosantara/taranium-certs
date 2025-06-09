@@ -18,37 +18,13 @@ spring:
       ddl-auto: update # Otomatis update skema database
     show-sql: true # Tampilkan query SQL di konsol (untuk debug)
 
-  # Hapus semua konfigurasi 'security.oauth2.client' yang lama di sini.
-  # Bagian ini sudah tidak dibutuhkan lagi karena login di-handle oleh frontend.
-  # security:
-  #   oauth2:
-  #     client:
-  #       registration:
-  #         google:
-  #           client-id: ...
-  #           client-secret: ...
-  #           redirect-uri: ...
-  #           scope: ...
-  #       provider:
-  #         google:
-  #           authorization-uri: ...
-  #           token-uri: ...
-  #           user-info-uri: ...
-  #           jwk-set-uri: ...
-
-  web: # <--- Perhatikan bahwa 'web' ada di bawah 'spring' (tidak mengulang 'spring' di luar).
+  web:
     cors:
-      allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173 # Izinkan dari port frontend Anda
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS # Metode HTTP yang diizinkan
+      allowed-origins: http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173 # Izinkan dari port frontend Anda
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS # Metode yang diizinkan
       allowed-headers: "*" # Header yang diizinkan
-      allow-credentials: true # Penting untuk pengiriman cookie sesi
+      allow-credentials: true # Penting untuk mengirim cookie sesi (jika browser mengirimnya, walau tidak akan dipakai lagi)
 
 # Konfigurasi aplikasi kustom
 app:
   upload-dir: ./uploads # Direktori untuk menyimpan file yang diupload
-  google: # <--- BAGIAN INI SANGAT PENTING DAN HARUS ADA!
-    client-id: 62795694598-tmpm5o5i3jsa8sn0nf748r6v0e0o1kf1.apps.googleusercontent.com # <--- Client ID yang digunakan untuk verifikasi ID Token
-    client-secret: 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
-    redirect-uri: http://localhost:8080/oauth2/callback
-      # Tempelkan Client ID yang Anda gunakan di frontend atau backend sebelumnya di sini.
-    # PASTIKAN TIDAK ADA SPASI TAMBAHAN DI AKHIR NILAI ID!

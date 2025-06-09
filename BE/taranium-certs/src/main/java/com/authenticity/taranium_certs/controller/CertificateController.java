@@ -3,16 +3,12 @@ package com.authenticity.taranium_certs.controller;
 // src/main/java/com/taraniumcerts/controller/CertificateController.java
 
 import com.authenticity.taranium_certs.dto.CertificateResponse;
-import com.authenticity.taranium_certs.dto.FolderContentResponse;
-import com.authenticity.taranium_certs.entity.AppUser; // Import AppUser
 import com.authenticity.taranium_certs.entity.Certificate;
 import com.authenticity.taranium_certs.exception.StorageException;
 import com.authenticity.taranium_certs.service.*;
-import com.authenticity.taranium_certs.service.UserService; // Import UserService
+import com.authenticity.taranium_certs.service.HashService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails; // Import UserDetails
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,43 +17,40 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * REST Controller untuk mengelola operasi sertifikat: pendaftaran dan verifikasi.
+ * Autentikasi dan otorisasi dilakukan sepenuhnya di sisi frontend (dengan MetaMask).
+ * Backend ini hanya fokus pada hashing, penyimpanan file, dan menyediakan metadata.
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin
 public class CertificateController {
 
     private final HashService hashService;
     private final FileStorageService fileStorageService;
     private final CertificateService certificateService;
-    private final UserService userService; // Inject UserService
 
-    public CertificateController(HashService hashService, FileStorageService fileStorageService, CertificateService certificateService, UserService userService) {
+    public CertificateController(HashService hashService, FileStorageService fileStorageService, CertificateService certificateService) {
         this.hashService = hashService;
         this.fileStorageService = fileStorageService;
         this.certificateService = certificateService;
-        this.userService = userService;
     }
 
     /**
      * Endpoint untuk mendaftarkan hash sertifikat dan menyimpannya secara lokal.
-     * Hanya bisa diakses oleh user dengan role INSTITUTION (setelah login Google).
-     *
+     * Frontend akan mengirimkan issuerAddress (alamat MetaMask institusi) sebagai parameter.
      * @param file File sertifikat yang diunggah.
-     * @param folderName Nama folder tempat file akan disimpan lokal (misal: "Ijazah-2023").
-     * @param authentication Objek Authentication dari Spring Security.
+     * @param folderName Nama folder tempat file akan disimpan lokal.
+     * @param issuerAddress Alamat MetaMask institusi yang mengunggah.
      * @return ResponseEntity yang berisi hash, path file lokal, dan pesan.
      */
     @PostMapping("/register")
     public ResponseEntity<CertificateResponse> registerCertificate(
             @RequestParam("file") MultipartFile file,
             @RequestParam("folderName") String folderName,
-            Authentication authentication) {
+            @RequestParam("issuerAddress") String issuerAddress) {
 
         if (file.isEmpty()) {
             return new ResponseEntity<>(
@@ -71,26 +64,10 @@ public class CertificateController {
                     HttpStatus.BAD_REQUEST
             );
         }
-
-        // Pastikan user terotentikasi dan memiliki role INSTITUTION
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserDetails)) {
+        if (issuerAddress == null || issuerAddress.trim().isEmpty()) {
             return new ResponseEntity<>(
-                    CertificateResponse.builder().message("Akses ditolak. Anda harus login sebagai institusi.").build(),
-                    HttpStatus.UNAUTHORIZED
-            );
-        }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        // Dapatkan email user sebagai issuerId dari UserDetails
-        String issuerEmail = userDetails.getUsername();
-
-        // Cek apakah user memiliki role INSTITUTION
-        boolean hasInstitutionRole = userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_INSTITUTION"));
-
-        if (!hasInstitutionRole) {
-            return new ResponseEntity<>(
-                    CertificateResponse.builder().message("Akses ditolak. Anda tidak memiliki izin sebagai institusi.").build(),
-                    HttpStatus.FORBIDDEN
+                    CertificateResponse.builder().message("Alamat institusi (MetaMask) tidak boleh kosong!").build(),
+                    HttpStatus.BAD_REQUEST
             );
         }
 
@@ -99,10 +76,10 @@ public class CertificateController {
             String documentHash = hashService.calculateSha256Hash(file.getInputStream());
 
             // 2. Simpan file secara lokal
-            String localFilePath = fileStorageService.storeFile(file, issuerEmail, folderName);
+            String localFilePath = fileStorageService.storeFile(file, issuerAddress, folderName);
 
             // 3. Simpan metadata sertifikat ke database lokal
-            Certificate certificate = new Certificate(documentHash, file.getOriginalFilename(), localFilePath, folderName, issuerEmail);
+            Certificate certificate = new Certificate(documentHash, file.getOriginalFilename(), localFilePath, folderName, issuerAddress);
             certificateService.saveCertificateMetadata(certificate);
 
             // Backend hanya mengembalikan hash dan path. Frontend akan melanjutkan interaksi ke blockchain.
@@ -112,7 +89,7 @@ public class CertificateController {
                             .originalFileName(file.getOriginalFilename())
                             .localFilePath(localFilePath)
                             .folderName(folderName)
-                            .issuerEmail(issuerEmail)
+                            .issuerAddress(issuerAddress)
                             .uploadTimestamp(certificate.getUploadTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                             .message("File berhasil diunggah, di-hash, dan metadata disimpan.")
                             .build(),
@@ -172,20 +149,18 @@ public class CertificateController {
     }
 
     /**
-     * Endpoint untuk mendapatkan daftar folder milik institusi yang login.
-     * @param authentication Objek Authentication dari Spring Security.
+     * Endpoint untuk mendapatkan daftar folder milik institusi dengan alamat blockchain tertentu.
+     * @param userAddress Alamat MetaMask user/institusi.
      * @return List of folder names.
      */
     @GetMapping("/folders")
-    public ResponseEntity<List<String>> getFolders(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserDetails)) {
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<List<String>> getFolders(@RequestParam("userAddress") String userAddress) {
+        if (userAddress == null || userAddress.trim().isEmpty()) {
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.BAD_REQUEST);
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String userEmail = userDetails.getUsername();
 
         try {
-            List<String> folders = fileStorageService.getFolders(userEmail);
+            List<String> folders = fileStorageService.getFolders(userAddress);
             return new ResponseEntity<>(folders, HttpStatus.OK);
         } catch (StorageException e) {
             System.err.println("Error saat mengambil daftar folder: " + e.getMessage());
@@ -194,23 +169,21 @@ public class CertificateController {
     }
 
     /**
-     * Endpoint untuk mendapatkan daftar file dan metadatanya di dalam folder tertentu milik institusi yang login.
+     * Endpoint untuk mendapatkan daftar file dan metadatanya di dalam folder tertentu milik institusi.
      * @param folderName Nama folder.
-     * @param authentication Objek Authentication dari Spring Security.
+     * @param userAddress Alamat MetaMask user/institusi.
      * @return List of CertificateResponse objects for files in the specified folder.
      */
     @GetMapping("/folders/{folderName}/certificates")
     public ResponseEntity<List<CertificateResponse>> getCertificatesByFolder(
             @PathVariable String folderName,
-            Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal() instanceof UserDetails)) {
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.UNAUTHORIZED);
+            @RequestParam("userAddress") String userAddress) {
+        if (userAddress == null || userAddress.trim().isEmpty()) {
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.BAD_REQUEST);
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String issuerEmail = userDetails.getUsername();
 
         try {
-            List<Certificate> certificates = certificateService.getCertificatesByIssuerEmailAndFolder(issuerEmail, folderName);
+            List<Certificate> certificates = certificateService.getCertificatesByIssuerAddressAndFolder(userAddress, folderName);
             // Konversi entitas Certificate ke DTO CertificateResponse
             List<CertificateResponse> responseList = certificates.stream()
                     .map(cert -> CertificateResponse.builder()
@@ -218,7 +191,7 @@ public class CertificateController {
                             .originalFileName(cert.getOriginalFileName())
                             .localFilePath(cert.getLocalFilePath())
                             .folderName(cert.getFolderName())
-                            .issuerEmail(cert.getIssuerEmail())
+                            .issuerAddress(cert.getIssuerAddress())
                             .uploadTimestamp(cert.getUploadTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                             .build())
                     .collect(Collectors.toList());

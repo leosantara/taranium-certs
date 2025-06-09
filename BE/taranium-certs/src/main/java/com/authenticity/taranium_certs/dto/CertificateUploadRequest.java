@@ -6,8 +6,11 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * DTO untuk request upload sertifikat oleh institusi.
  * Mengandung file sertifikat dan nama folder.
+ * Catatan: Ini DTO tidak secara langsung digunakan sebagai @RequestBody
+ * karena file dan folderName diterima sebagai @RequestParam.
+ * Namun, ini berguna untuk mendefinisikan struktur data.
  */
-@Data // Lombok: otomatis membuat getter, setter, toString, equals, hashCode
+@Data
 public class CertificateUploadRequest {
     private MultipartFile file;
     private String folderName;

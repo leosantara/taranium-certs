@@ -6,14 +6,14 @@ import lombok.Data;
 /**
  * DTO untuk merepresentasikan informasi sertifikat yang telah diupload.
  */
-@Data // Lombok: otomatis membuat getter, setter, toString, equals, hashCode
-@Builder // Lombok: otomatis membuat builder pattern
+@Data
+@Builder
 public class CertificateResponse {
     private String documentHash;
     private String originalFileName;
     private String localFilePath;
     private String folderName;
-    private String issuerEmail;
-    private String uploadTimestamp; // String untuk representasi tanggal/waktu yang mudah dibaca
-    private String message; // Pesan sukses/error
+    private String issuerAddress; // <--- Berubah: dari issuerEmail menjadi issuerAddress
+    private String uploadTimestamp;
+    private String message;
 }

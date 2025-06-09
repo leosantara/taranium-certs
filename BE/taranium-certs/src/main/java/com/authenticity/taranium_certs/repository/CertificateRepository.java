@@ -1,6 +1,5 @@
 package com.authenticity.taranium_certs.repository;
 
-
 import com.authenticity.taranium_certs.entity.Certificate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
@@ -20,17 +19,17 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
     Optional<Certificate> findByDocumentHash(String documentHash);
 
     /**
-     * Mencari semua Certificate yang diupload oleh institusi tertentu.
-     * @param issuerEmail Email institusi.
+     * Mencari semua Certificate yang diupload oleh institusi dengan alamat blockchain tertentu.
+     * @param issuerAddress Alamat blockchain institusi.
      * @return List dari Certificate yang diupload oleh institusi tersebut.
      */
-    List<Certificate> findByIssuerEmail(String issuerEmail);
+    List<Certificate> findByIssuerAddress(String issuerAddress);
 
     /**
      * Mencari semua Certificate yang diupload oleh institusi tertentu dalam folder tertentu.
-     * @param issuerEmail Email institusi.
+     * @param issuerAddress Alamat blockchain institusi.
      * @param folderName Nama folder.
      * @return List dari Certificate yang cocok.
      */
-    List<Certificate> findByIssuerEmailAndFolderName(String issuerEmail, String folderName);
+    List<Certificate> findByIssuerAddressAndFolderName(String issuerAddress, String folderName);
 }

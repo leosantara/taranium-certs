@@ -1,6 +1,5 @@
 package com.authenticity.taranium_certs.service;
 
-
 import com.authenticity.taranium_certs.entity.Certificate;
 import com.authenticity.taranium_certs.repository.CertificateRepository;
 import org.springframework.stereotype.Service;
@@ -40,21 +39,21 @@ public class CertificateService {
     }
 
     /**
-     * Mengambil semua sertifikat yang diupload oleh institusi tertentu.
-     * @param issuerEmail Email institusi.
+     * Mengambil semua sertifikat yang diupload oleh institusi dengan alamat blockchain tertentu.
+     * @param issuerAddress Alamat blockchain institusi.
      * @return List dari Certificate.
      */
-    public List<Certificate> getCertificatesByIssuerEmail(String issuerEmail) {
-        return certificateRepository.findByIssuerEmail(issuerEmail);
+    public List<Certificate> getCertificatesByIssuerAddress(String issuerAddress) {
+        return certificateRepository.findByIssuerAddress(issuerAddress);
     }
 
     /**
      * Mengambil semua sertifikat yang diupload oleh institusi tertentu dalam folder tertentu.
-     * @param issuerEmail Email institusi.
+     * @param issuerAddress Alamat blockchain institusi.
      * @param folderName Nama folder.
      * @return List dari Certificate.
      */
-    public List<Certificate> getCertificatesByIssuerEmailAndFolder(String issuerEmail, String folderName) {
-        return certificateRepository.findByIssuerEmailAndFolderName(issuerEmail, folderName);
+    public List<Certificate> getCertificatesByIssuerAddressAndFolder(String issuerAddress, String folderName) {
+        return certificateRepository.findByIssuerAddressAndFolderName(issuerAddress, folderName);
     }
 }
