@@ -16,7 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // Terapkan CORS ke semua endpoint
-                .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000") // Izinkan frontend Anda
+                .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000","http://localhost:5173", "http://127.0.0.1:5173") // Izinkan frontend Anda
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Metode yang diizinkan
                 .allowedHeaders("*") // Header yang diizinkan
                 .allowCredentials(true); // Penting untuk mengirim cookie sesi
