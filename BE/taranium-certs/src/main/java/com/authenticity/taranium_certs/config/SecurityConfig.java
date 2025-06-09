@@ -1,10 +1,11 @@
 package com.authenticity.taranium_certs.config;
 
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.Customizer; // Import ini
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity; // Import ini
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,8 +24,6 @@ import java.util.List;
  */
 @Configuration
 @EnableWebSecurity
-// Jika Anda memang membutuhkan anotasi keamanan method seperti @PreAuthorize, biarkan ini.
-// Jika tidak, Anda bisa menghapusnya untuk kesederhanaan.
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
 
@@ -42,13 +41,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true); // Penting untuk mengirim cookie sesi
+        config.setAllowCredentials(true);
         // Izinkan origin frontend Anda
         config.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Metode yang diizinkan
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers")); // Header yang diizinkan
-        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials")); // Header yang diekspos
-        source.registerCorsConfiguration("/**", config); // Terapkan konfigurasi ke semua path
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        config.setExposedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
@@ -61,36 +60,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Terapkan CORS menggunakan Customizer.withDefaults()
                 .cors(Customizer.withDefaults())
-                // Nonaktifkan CSRF
                 .csrf(csrf -> csrf.disable())
-                // Konfigurasi otorisasi permintaan HTTP
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                // Izinkan akses publik ke endpoint tertentu
                                 .requestMatchers(
-                                        "/api/user",          // Info user/status login
-                                        "/api/verify",        // Verifikasi sertifikat
-                                        "/api/auth/google-login", // Login Google (menerima ID Token)
-                                        "/api/auth/logout",   // Logout
-                                        "/"                   // Halaman utama
+                                        "/api/user",
+                                        "/api/verify",
+                                        "/api/auth/google-auth-code", // <--- PATH INI SUDAH DIKOREKSI!
+                                        "/api/auth/logout",
+                                        "/"
                                 ).permitAll()
-
-                                // Hanya user dengan role INSTITUTION yang bisa mengakses endpoint registrasi dan folder
                                 .requestMatchers("/api/register", "/api/folders/**").hasRole("INSTITUTION")
-                                // Semua request lainnya memerlukan otentikasi
                                 .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
-                        // Tangani Unauthorized (401)
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
-                // Konfigurasi manajemen sesi: IF_REQUIRED karena kita menggunakan sesi JSESSIONID
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
-                // Tambahkan filter kustom Anda sebelum filter autentikasi standar
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

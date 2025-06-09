@@ -48,5 +48,7 @@ app:
   upload-dir: ./uploads # Direktori untuk menyimpan file yang diupload
   google: # <--- BAGIAN INI SANGAT PENTING DAN HARUS ADA!
     client-id: 62795694598-tmpm5o5i3jsa8sn0nf748r6v0e0o1kf1.apps.googleusercontent.com # <--- Client ID yang digunakan untuk verifikasi ID Token
+    client-secret: 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
+    redirect-uri: http://localhost:8080/oauth2/callback
       # Tempelkan Client ID yang Anda gunakan di frontend atau backend sebelumnya di sini.
     # PASTIKAN TIDAK ADA SPASI TAMBAHAN DI AKHIR NILAI ID!

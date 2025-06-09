@@ -129,7 +129,7 @@ const CERTIFICATE_REGISTRY_ABI = [
 		"type": "function"
 	}
 ];
-const CERTIFICATE_REGISTRY_ADDRESS = "0x12b460cfe82bA99a7307A611A457481C119bc9dA"; // Ganti dengan alamat kontrak Anda yang telah dideploy
+const CERTIFICATE_REGISTRY_ADDRESS = "0xABd3Aa9a4ce3dDd822026c23E80D52a29bE64f11"; // Ganti dengan alamat kontrak Anda yang telah dideploy
 
 /**
  * Menghubungkan ke dompet (misalnya MetaMask) dan mendapatkan provider/signer.
