@@ -13,16 +13,19 @@
 
     <div v-if="verificationResult" class="result-section">
       <h3>Hasil Verifikasi:</h3>
-      <p><strong>Hash Dokumen:</strong> {{ verificationResult.documentHash }}</p>
-      <p><strong>Status Blockchain:</strong> {{ blockchainStatus }}</p>
-      <p v-if="blockchainStatus === 'ASLI dan TERDAFTAR'">
-        Sertifikat ini ditemukan dan terdaftar di Taranium Smartchain!
-        <span v-if="blockchainInfo.issuer"> Diterbitkan oleh: {{ blockchainInfo.issuer.substring(0, 8) }}...{{ blockchainInfo.issuer.substring(blockchainInfo.issuer.length - 6) }}</span>
-        <span v-if="blockchainInfo.timestamp"> pada: {{ blockchainInfo.timestamp }}</span>
-      </p>
-      <p v-else-if="blockchainStatus === 'TIDAK TERDAFTAR'">
-        Sertifikat ini belum terdaftar di Taranium Smartchain.
-      </p>
+      <div class="iniStatus"> 
+        <p><strong>Hash Dokumen:</strong> {{ verificationResult.documentHash }}</p>
+        <p><strong>Status Blockchain:</strong> <span style="color: red;">{{ blockchainStatus }}</span></p>
+        <p v-if="blockchainStatus === 'ASLI dan TERDAFTAR'">
+          Sertifikat ini ditemukan dan terdaftar di Taranium Smartchain!
+          <span v-if="blockchainInfo.issuer"> Diterbitkan oleh: {{ blockchainInfo.issuer.substring(0, 8) }}...{{
+            blockchainInfo.issuer.substring(blockchainInfo.issuer.length - 6) }}</span>
+          <span v-if="blockchainInfo.timestamp"> pada: {{ blockchainInfo.timestamp }}</span>
+        </p>
+        <p v-else-if="blockchainStatus === 'TIDAK TERDAFTAR'">
+          Sertifikat ini belum terdaftar di Taranium Smartchain.
+        </p>
+      </div>
       <p v-if="error" class="error-message">{{ error }}</p>
     </div>
   </main>
@@ -97,6 +100,12 @@ const verifyCertificate = async () => {
 </script>
 
 <style scoped>
+.result-section {
+  color: #000000;
+}
+.result-section strong {
+  font-weight: bold;
+}
 .home-view {
   max-width: 800px;
   margin: 2rem auto;
