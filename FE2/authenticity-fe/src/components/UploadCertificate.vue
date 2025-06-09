@@ -7,7 +7,7 @@
 
     <div class="form-group">
       <label for="file">Pilih File Sertifikat:</label>
-      <input type="file" id="file" @change="handleFileUpload" ref="fileInput" accept=".pdf,.jpg,.png" :disabled="!userAddress" />
+      <input style="color: black;" type="file" id="file" @change="handleFileUpload" ref="fileInput" accept=".pdf,.jpg,.png" :disabled="!userAddress" />
     </div>
 
     <div class="form-group">

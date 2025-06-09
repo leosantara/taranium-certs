@@ -1,8 +1,8 @@
 <!-- src/views/HomeView.vue -->
 <template>
   <main class="home-view">
-    <h1>Verifikasi Sertifikat Digital</h1>
-    <p>Unggah sertifikat Anda untuk memeriksa keasliannya di Taranium Smartchain.</p>
+    <h1 style="color: purple;">Verifikasi Sertifikat Digital</h1>
+    <p style="color: purple;">Unggah sertifikat Anda untuk memeriksa keasliannya di Taranium Smartchain.</p>
 
     <div class="upload-section">
       <input type="file" @change="handleFileUpload" ref="fileInput" accept=".pdf,.jpg,.png" />
@@ -100,6 +100,9 @@ const verifyCertificate = async () => {
 </script>
 
 <style scoped>
+.upload-section {
+  color:#000000;
+}
 .result-section {
   color: #000000;
 }

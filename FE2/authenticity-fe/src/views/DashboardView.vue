@@ -1,9 +1,9 @@
 <!-- src/views/DashboardView.vue -->
 <template>
   <main class="dashboard-view">
-    <h1>Dashboard Institusi</h1>
-    <p v-if="userAddress">Selamat datang, Institusi: {{ displayAddress }}!</p>
-    <p v-else class="warning-message">Anda harus terhubung ke MetaMask untuk melihat dashboard ini.</p>
+    <h1 style="color: purple;">Dashboard Institusi</h1>
+    <p style="color: purple;" v-if="userAddress">Selamat datang, Institusi: {{ displayAddress }}!</p>
+    <p style="color: purple;" v-else class="warning-message">Anda harus terhubung ke MetaMask untuk melihat dashboard ini.</p>
 
     <div v-if="userAddress" class="dashboard-sections">
       <section class="upload-section">
@@ -20,16 +20,16 @@
         <div v-if="folders.length > 0">
           <h4>Folder:</h4>
           <ul>
-            <li v-for="folder in folders" :key="folder" @click="selectFolder(folder)" :class="{ 'selected': selectedFolder === folder }">
+            <li style="color: red;" v-for="folder in folders" :key="folder" @click="selectFolder(folder)" :class="{ 'selected': selectedFolder === folder }">
               {{ folder }}
             </li>
           </ul>
         </div>
-        <p v-else-if="!isLoadingFolders">Belum ada folder yang diunggah.</p>
+        <p v-else-if="!isLoadingFolders" style="color: black;">Belum ada folder yang diunggah.</p>
         <p v-if="folderError" class="error-message">{{ folderError }}</p>
 
         <div v-if="selectedFolder" class="files-section">
-          <h4>Sertifikat di Folder "{{ selectedFolder }}":</h4>
+          <h4 style="color: black;">Sertifikat di Folder "<strong>{{ selectedFolder }}</strong>":</h4>
           <ul v-if="filesInSelectedFolder.length > 0">
             <li v-for="cert in filesInSelectedFolder" :key="cert.documentHash" class="certificate-item">
               <strong>File:</strong> {{ cert.originalFileName }}<br>
@@ -152,6 +152,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.certificate-item {
+  color: #4CAF50;
+}
 .dashboard-view {
   max-width: 1000px;
   margin: 2rem auto;
